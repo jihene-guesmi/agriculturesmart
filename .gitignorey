@@ -1,0 +1,64 @@
+__pycache__/
+*.pyc
+.env
+venv/
+.DS_Store
+
+# ML files (IMPORTANT)
+*.pth
+*.pt
+*.h5
+*.pkl
+
+# Jupyter
+.ipynb_checkpoints/
+
+# training outputs
+notebooks/runs/
+*.pth
+
+Save modified buffer (ANSWERING "No" WILL DESTROY CHANGES) ?                    
+             Y Yes                                                            
+^C Cancel    N No notebooks/runs/
+*.pth
+
+Save modified buffer (ANSWERING "No" WILL DESTROY CHANGES) ?                    
+             Y Yes                                                            
+^C Cancel    N No *.pth
+
+
+
+
+
+
+
+*.pt
+models/notebooks/runs/
+git add .
+git commit -m "Remove large model files"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
