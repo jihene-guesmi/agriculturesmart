@@ -105,9 +105,10 @@ def load_surface_mapper():
         model = model.cuda()
     return model
 
+# FIXED: Standardized to exact 4-space tabs to wipe out the IndentationError
 with st.spinner("⏳ Warming up AI Quality Inspection System..."):
     defect_tracker_engine = load_defect_tracker()
-    surface_mapper_engine = load_surface_mapper()
+    deeplab_engine = load_surface_mapper
 
 # ==========================================
 # SIDEBAR CONTROL PARAMETER DECK
