@@ -256,32 +256,33 @@ if active_image_src is not None:
 
     if damage_percentage < 1.5:
         health_grade = "<span style='color:#10b981;'>🟢 GRADE A: PREMIUM QUALITY</span>"
-        recommendation = "Excellent pristine condition. Ready for commercial retail packaging and premium distribution."
-    elif damage_percentage <= 12.0:
-        health_grade = "🟡 GRADE B: SECONDARY VALUE"
-        recommendation = "Minor cosmetic defects or spot anomalies tracked. Divert safely to processing, juicing, or canning pipelines."
-    else:
-        health_grade = "🔴 REJECT: ANOMALY QUARANTINE"
-        recommendation = "Severe dense surface rot or active plant infection detected. Quarantine item immediately to protect asset storage.st.markdown("", unsafe_allow_html=True)
-        col_metric1, col_metric2 = st.columns(2)
+    # ==================== DISPLAY DYNAMIC INSIGHT SCORE CARDS ====================
+    st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
+    col_metric1, col_metric2 = st.columns(2)
+    
     with col_metric1:
-      st.markdown(f"""
+        st.markdown(f"""
+        <div class='status-card'>
+            <div class='status-title'>AI Automatic Quality Grade</div>
+            <div class='status-value'>{health_grade}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col_metric2:
+        st.markdown(f"""
+        <div class='status-card'>
+            <div class='status-title'>Surface Blemish Distribution Area</div>
+            <div class='status-value' style='color:#f3f4f6;'>{damage_percentage:.2f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-AI Automatic Quality Grade
-{health_grade}
-
-""", unsafe_allow_html=True)
-with col_metric2:
-st.markdown(f"""
-
-Surface Blemish Distribution Area
-{damage_percentage:.2f}%
-
-""", unsafe_allow_html=True)
-st.markdown("", unsafe_allow_html=True)
-st.info(f"📋 Next-Step Action Plan: {recommendation}")
+    # Output clear strategic actionable text to the user
+    st.markdown("<div style='margin-top:15px;'></div>", unsafe_allow_html=True)
+    st.info(f"📋 **Next-Step Action Plan:** {recommendation}")
+        
 else:
-st.info("Select any sample leaf image from the gallery above or upload a photo to initialize the automated quality grading engines 🍏")
+    st.info("Select any sample leaf image from the gallery above or upload a photo to initialize the automated quality grading engines 🍏")
 
+# ==================== FOOTER ====================
 st.markdown("---")
-st.markdown("🍿 User-Optimized Crop Quality Analyzer Ecosystem Deployed via Streamlit Cloud Systems", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; color: #555; font-size: 11px;'>🍿 User-Optimized Crop Quality Analyzer Ecosystem Deployed via Streamlit Cloud Systems</div>", unsafe_allow_html=True)
