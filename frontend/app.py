@@ -87,12 +87,12 @@ st.markdown("""
 @st.cache_resource
 def load_defect_tracker():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    root_weights = os.path.join(base_dir, "detection", "best.pt")
-    frontend_weights = os.path.join(os.path.dirname(os.path.abspath(__file__)), "detection", "best.pt")
+   with st.spinner("⏳ Warming up AI Quality Inspection System..."):
+    defect_tracker_engine = load_defect_tracker()
     
-    if os.path.exists(root_weights):
-        return YOLO(root_weights)
-    elif os.path.exists(frontend_weights):
+    # 💡 LINE TO CHANGE: Rename variable from surface_mapper_engine to deeplab_engine
+    deeplab_engine = load_surface_mapper()  
+
         return YOLO(frontend_weights)
     else:
         return YOLO("yolov8n.pt")
