@@ -1,0 +1,7 @@
+streamlit
+torch
+torchvision
+ultralytics
+fastapi
+pandas
+numpy
