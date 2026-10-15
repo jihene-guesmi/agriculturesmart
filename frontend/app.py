@@ -245,7 +245,7 @@ if active_image_src is not None:
     if damage_percentage < 1.5:
         health_grade = "<span style='color:#10b981;'>🟢 GRADE A: PREMIUM QUALITY</span>"
         recommendation = "Excellent pristine condition. Ready for commercial retail packaging and premium distribution."
-            elif damage_percentage <= 12.0:
+    elif damage_percentage <= 12.0:
         health_grade = "<span style='color:#f59e0b;'>🟡 GRADE B: SECONDARY VALUE</span>"
         recommendation = "Minor cosmetic defects or spot anomalies tracked. Divert safely to processing, juicing, or canning pipelines."
     else:
