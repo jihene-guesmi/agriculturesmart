@@ -6,7 +6,7 @@ import time
 import os
 from PIL import Image
 from ultralytics import YOLO
-import torchvision.models.segmentation as segmentation
+import torchvision.models.segmentation as segmentation  # Native import for Python 3.14 stability
 
 # ==========================================
 # PAGE CONFIGURATION & APP THEME
@@ -99,6 +99,7 @@ def load_defect_tracker():
 
 @st.cache_resource
 def load_surface_mapper():
+    # Direct library load bypasses torch.hub network issues on the cloud server
     model = segmentation.deeplabv3_resnet50(weights=segmentation.DeepLabV3_ResNet50_Weights.DEFAULT)
     model.eval()
     if torch.cuda.is_available():
@@ -130,14 +131,17 @@ st.write("Click any sample image below to test the AI inspection matrix instantl
 
 gallery_cols = st.columns(5)
 
-# FIXED: Points exclusively to your local repository directory files
-base_path = os.path.dirname(os.path.abspath(__file__))
+# Automatically resolve the true root repository directory path (one level up from frontend/)
+frontend_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(frontend_dir)
+
+# Construct absolute lookups targeting your root 'samples' folder
 gallery_images = {
-    "Sample 1": {"path": os.path.join(base_path, "samples", "healthy1.jpg"), "desc": "🟢 Healthy Premium Leaf"},
-    "Sample 2": {"path": os.path.join(base_path, "samples", "healthy2.jpg"), "desc": "🟢 Healthy Growth Leaf"},
-    "Sample 3": {"path": os.path.join(base_path, "samples", "healthy3.jpg"), "desc": "🟢 Healthy Texture Surface"},
-    "Sample 4": {"path": os.path.join(base_path, "samples", "spotted.jpg"), "desc": "🔴 Anomaly: Brown Leaf Spots"},
-    "Sample 5": {"path": os.path.join(base_path, "samples", "yellow.jpg"), "desc": "🟡 Warning: Surface Discoloration"}
+    "Sample 1": {"path": os.path.join(root_dir, "samples", "healthy1.jpg"), "desc": "🟢 Healthy Premium Leaf"},
+    "Sample 2": {"path": os.path.join(root_dir, "samples", "healthy2.jpg"), "desc": "🟢 Healthy Growth Leaf"},
+    "Sample 3": {"path": os.path.join(root_dir, "samples", "healthy3.jpg"), "desc": "🟢 Healthy Texture Surface"},
+    "Sample 4": {"path": os.path.join(root_dir, "samples", "spotted.jpg"), "desc": "🔴 Anomaly: Brown Leaf Spots"},
+    "Sample 5": {"path": os.path.join(root_dir, "samples", "yellow.jpg"), "desc": "🟡 Warning: Surface Discoloration"}
 }
 
 if "selected_sample" not in st.session_state:
@@ -145,11 +149,11 @@ if "selected_sample" not in st.session_state:
 
 for i, (key, info) in enumerate(gallery_images.items()):
     with gallery_cols[i]:
-        # Safely render if files exist locally on the cloud storage container disk
+        # Verifies file presence across the cloud system root directory
         if os.path.exists(info["path"]):
             st.image(info["path"], use_container_width=True, caption=info["desc"])
         else:
-            st.warning("⚠️ Missing File")
+            st.warning("⚠️ Image Not Found")
             
         if st.button(f"Scan {key}", use_container_width=True):
             st.session_state.selected_sample = info["path"]
@@ -171,12 +175,12 @@ if uploaded_file is not None:
     opencv_img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     active_image_src = cv2.cvtColor(opencv_img, cv2.COLOR_BGR2RGB)
 elif st.session_state.selected_sample is not None:
-    # FIXED: Loads the image array directly from local memory without using network blocks
+    # Loads the image array directly from root folder path memory smoothly
     if os.path.exists(st.session_state.selected_sample):
         img_pil = Image.open(st.session_state.selected_sample).convert("RGB")
         active_image_src = np.array(img_pil)
     else:
-        st.error("⚠️ Local File Storage Error: Ensure image samples are committed to your GitHub branch.")
+        st.error("⚠️ Local File Storage Error: Ensure image samples are committed to your root GitHub branch.")
 
 # ==========================================
 # CORE VISUAL INFERENCE EXECUTION PIPELINE
@@ -188,7 +192,9 @@ if active_image_src is not None:
     with st.spinner("🧠 Scanning sample layers for diagnostic anomalies..."):
         # 1. Run Engine A: Object Detection (YOLO)
         tracker_results = defect_tracker_engine(active_image_src, verbose=False)
-        annotated_frame = tracker_results.plot() 
+        
+        # FIX: Extract index 0 from the results list array to prevent the AttributeError on plot()
+        annotated_frame = tracker_results[0].plot() 
         annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB) 
         
         # 2. Run Engine B: Dense Surface Segmentation (DeepLabV3)
@@ -215,7 +221,7 @@ if active_image_src is not None:
     
     anomaly_pixels = (surface_predictions == 15)
     r[anomaly_pixels] = 255
-    g[anomaly_pixels] = 135  
+    g[anomaly_pixels] = 135  # Shines bright neon orange warnings over tracked leaf damage blemishes
     
     rgb_mask = cv2.merge([r, g, b])
     resized_mask = cv2.resize(rgb_mask, (w_orig, h_orig), interpolation=cv2.INTER_NEAREST)
@@ -247,14 +253,9 @@ if active_image_src is not None:
         health_grade = "<span style='color:#ef4444;'>🔴 REJECT: ANOMALY QUARANTINE</span>"
         recommendation = "Severe dense surface rot or active plant infection detected. Quarantine item immediately to protect asset storage."
 
-    # DISPLAY DYNAMIC INSIGHT SCORE CARDS
+    # ==================== DISPLAY DYNAMIC INSIGHT SCORE CARDS ====================
     st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
     col_metric1, col_metric2 = st.columns(2)
-    
-    with col_metric1:
-    # ==================== DISPLAY DYNAMIC INSIGHT SCORE CARDS ====================
-     st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
-     col_metric1, col_metric2 = st.columns(2)
     
     with col_metric1:
         st.markdown(f"""
