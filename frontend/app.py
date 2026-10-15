@@ -87,7 +87,7 @@ st.markdown("""
 @st.cache_resource
 def load_defect_tracker():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-   with st.spinner("⏳ Warming up AI Quality Inspection System..."):
+with st.spinner("⏳ Warming up AI Quality Inspection System..."):
     defect_tracker_engine = load_defect_tracker()
     
     # 💡 LINE TO CHANGE: Rename variable from surface_mapper_engine to deeplab_engine
