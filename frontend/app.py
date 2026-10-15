@@ -67,19 +67,19 @@ def load_yolo_model():
     root_weights_path = os.path.join(base_dir, "detection", "best.pt")
     frontend_weights_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "detection", "best.pt")
     
-    # Try looking for local files first
+    # Try looking for your custom trained local file targets first
     if os.path.exists(root_weights_path):
         return YOLO(root_weights_path)
     elif os.path.exists(frontend_weights_path):
         return YOLO(frontend_weights_path)
     else:
-        # CLOUD NETWORK FALLBACK: If best.pt was skipped by GitHub because of its size,
-        # pull a public pre-trained YOLOv8 weights matrix to prevent a total application crash.
-        return YOLO("https://github.com")
+        # 🚀 FIX: Pass 'yolov8n.pt' directly as a clean structural keyword string configuration
+        # to prevent the AutoBackend type mapping error on Python 3.14 cloud environments
+        return YOLO("yolov8n.pt")
 
 @st.cache_resource
 def load_segmentation_model():
-    # FIX: Native weights loading handles Python 3.14 layers without torch.hub crashes
+    # Native weights loading handles Python 3.14 layers without torch.hub crashes
     model = segmentation.deeplabv3_resnet50(weights=segmentation.DeepLabV3_ResNet50_Weights.DEFAULT)
     model.eval()
     if torch.cuda.is_available():
@@ -132,14 +132,12 @@ if uploaded_file is not None:
         start_time = time.time()
         
         # --- Engine A Execution: Object Detection (YOLO) ---
-        yolo_results = yolo_engine(rgb_img, verbose=False)
-        annotated_frame = yolo_results.plot() # Automatically plots bounding boxes onto input tensor map
-        annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB) # Keep mapping aligned
+        yolo_results = yolo_engine(rgb_img, verbose=False)[0] # Extract the target core result slice index
+        annotated_frame = yolo_results.plot() # Plots bounding boxes onto input tensor map
         
         # --- Engine B Execution: Dense Semantic Pixel Classification (DeepLabV3) ---
         input_image = Image.fromarray(rgb_img)
         
-        # Fixed transforms sequence matching native torchvision components
         from torchvision import transforms
         preprocess = transforms.Compose([
             transforms.Resize(520),
