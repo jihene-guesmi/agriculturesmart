@@ -87,15 +87,15 @@ st.markdown("""
 @st.cache_resource
 def load_defect_tracker():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-  with st.spinner("⏳ Warming up AI Quality Inspection System..."):
-    defect_tracker_engine = load_defect_tracker()
+    root_weights = os.path.join(base_dir, "detection", "best.pt")
+    frontend_weights = os.path.join(os.path.dirname(os.path.abspath(__file__)), "detection", "best.pt")
     
-    # 💡 LINE TO CHANGE: Rename variable from surface_mapper_engine to deeplab_engine
-    deeplab_engine = load_surface_mapper()   
-
-    return YOLO(frontend_weights)
-else:
-    return YOLO("yolov8n.pt")
+    if os.path.exists(root_weights):
+        return YOLO(root_weights)
+    elif os.path.exists(frontend_weights):
+        return YOLO(frontend_weights)
+    else:
+        return YOLO("yolov8n.pt")
 
 @st.cache_resource
 def load_surface_mapper():
@@ -105,10 +105,9 @@ def load_surface_mapper():
         model = model.cuda()
     return model
 
-# FIXED: Standardized to exact 4-space tabs to wipe out the IndentationError
 with st.spinner("⏳ Warming up AI Quality Inspection System..."):
     defect_tracker_engine = load_defect_tracker()
-    deeplab_engine = load_surface_mapper
+    deeplab_engine = load_surface_mapper()
 
 # ==========================================
 # SIDEBAR CONTROL PARAMETER DECK
@@ -190,7 +189,7 @@ if active_image_src is not None:
     with st.spinner("🧠 Scanning sample layers for diagnostic anomalies..."):
         # 1. Run Engine A: Object Detection (YOLO)
         tracker_results = defect_tracker_engine(active_image_src, verbose=False)
-        annotated_frame = tracker_results[0].plot() 
+        annotated_frame = tracker_results.plot() 
         annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB) 
         
         # 2. Run Engine B: Dense Surface Segmentation (DeepLabV3)
@@ -234,10 +233,10 @@ if active_image_src is not None:
 
     st.image(final_render, caption="📸 Quality Scanner Output | Boxes Highlight Spot Anchors, Orange Layer Maps Dense Rot Surface Area", width='stretch')
     
-    # ==================== CORRECTED SURFACE DENSITY ANALYSIS ====================
+    # ==================== SURFACE DENSITY ANALYSIS ====================
     healthy_plant_pixels = np.sum(surface_predictions == 15)
     total_pixels = surface_predictions.size
-    detected_boxes = len(tracker_results[0].boxes) if len(tracker_results) > 0 else 0
+    detected_boxes = len(tracker_results.boxes) if len(tracker_results) > 0 else 0
     
     if detected_boxes > 0:
         damage_percentage = min(8.5 * detected_boxes, 98.45)
@@ -259,38 +258,30 @@ if active_image_src is not None:
         health_grade = "<span style='color:#10b981;'>🟢 GRADE A: PREMIUM QUALITY</span>"
         recommendation = "Excellent pristine condition. Ready for commercial retail packaging and premium distribution."
     elif damage_percentage <= 12.0:
-        health_grade = "<span style='color:#f59e0b;'>🟡 GRADE B: SECONDARY VALUE</span>"
+        health_grade = "🟡 GRADE B: SECONDARY VALUE"
         recommendation = "Minor cosmetic defects or spot anomalies tracked. Divert safely to processing, juicing, or canning pipelines."
     else:
-        health_grade = "<span style='color:#ef4444;'>🔴 REJECT: ANOMALY QUARANTINE</span>"
-        recommendation = "Severe dense surface rot or active plant infection detected. Quarantine item immediately to protect asset storage."
-
-    # ==================== DISPLAY DYNAMIC INSIGHT SCORE CARDS ====================
-    st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
-    col_metric1, col_metric2 = st.columns(2)
-    
+        health_grade = "🔴 REJECT: ANOMALY QUARANTINE"
+        recommendation = "Severe dense surface rot or active plant infection detected. Quarantine item immediately to protect asset storage.st.markdown("", unsafe_allow_html=True)
+        col_metric1, col_metric2 = st.columns(2)
     with col_metric1:
-        st.markdown(f"""
-        <div class='status-card'>
-            <div class='status-title'>AI Automatic Quality Grade</div>
-            <div class='status-value'>{health_grade}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col_metric2:
-        st.markdown(f"""
-        <div class='status-card'>
-            <div class='status-title'>Surface Blemish Distribution Area</div>
-            <div class='status-value' style='color:#f3f4f6;'>{damage_percentage:.2f}%</div>
-        </div>
-        """, unsafe_allow_html=True)
+      st.markdown(f"""
 
-    st.markdown("<div style='margin-top:15px;'></div>", unsafe_allow_html=True)
-    st.info(f"📋 **Next-Step Action Plan:** {recommendation}")
-        
+AI Automatic Quality Grade
+{health_grade}
+
+""", unsafe_allow_html=True)
+with col_metric2:
+st.markdown(f"""
+
+Surface Blemish Distribution Area
+{damage_percentage:.2f}%
+
+""", unsafe_allow_html=True)
+st.markdown("", unsafe_allow_html=True)
+st.info(f"📋 Next-Step Action Plan: {recommendation}")
 else:
-    st.info("Select any sample leaf image from the gallery above or upload a photo to initialize the automated quality grading engines 🍏")
+st.info("Select any sample leaf image from the gallery above or upload a photo to initialize the automated quality grading engines 🍏")
 
-# ==================== FOOTER ====================
 st.markdown("---")
-st.markdown("<div style='text-align: center; color: #555; font-size: 11px;'>🍿 User-Optimized Crop Quality Analyzer Ecosystem Deployed via Streamlit Cloud Systems</div>", unsafe_allow_html=True)
+st.markdown("🍿 User-Optimized Crop Quality Analyzer Ecosystem Deployed via Streamlit Cloud Systems", unsafe_allow_html=True)
