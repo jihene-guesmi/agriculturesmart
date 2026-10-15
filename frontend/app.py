@@ -93,9 +93,9 @@ def load_defect_tracker():
     # 💡 LINE TO CHANGE: Rename variable from surface_mapper_engine to deeplab_engine
     deeplab_engine = load_surface_mapper()  
 
-        return YOLO(frontend_weights)
+    return YOLO(frontend_weights)
     else:
-        return YOLO("yolov8n.pt")
+    return YOLO("yolov8n.pt")
 
 @st.cache_resource
 def load_surface_mapper():
