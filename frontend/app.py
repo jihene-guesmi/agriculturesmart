@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import torch
 import time
+import os
 from PIL import Image
 from ultralytics import YOLO
 
@@ -60,8 +61,20 @@ st.markdown("""
 # ==========================================
 @st.cache_resource
 def load_yolo_model():
-    # Locates your committed custom weights pathway folder parameters
-    return YOLO("detection/best.pt")
+    # FIX: Explicit path resolution layer fixes the FileNotFoundError on Streamlit Cloud containers
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root_weights_path = os.path.join(base_dir, "detection", "best.pt")
+    frontend_weights_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "detection", "best.pt")
+    local_fallback_path = "detection/best.pt"
+    
+    # Trace file presence across the directory framework variations
+    if os.path.exists(root_weights_path):
+        return YOLO(root_weights_path)
+    elif os.path.exists(frontend_weights_path):
+        return YOLO(frontend_weights_path)
+    else:
+        # Fallback tracking maps to direct cloud weight loading strings if files were too heavy for GitHub tracking
+        return YOLO(local_fallback_path)
 
 @st.cache_resource
 def load_segmentation_model():
@@ -137,8 +150,8 @@ if uploaded_file is not None:
             input_tensor = input_tensor.to('cuda')
             
         with torch.no_grad():
-            output = deeplab_engine(input_tensor)['out'][0]
-        seg_predictions = output.argmax(0).byte().cpu().numpy()
+            output = deeplab_engine(input_tensor)['out']
+        seg_predictions = output.argmax(1).squeeze(0).byte().cpu().numpy()
         
         latency_bench = (time.time() - start_time) * 1000
 
@@ -168,7 +181,7 @@ if uploaded_file is not None:
         final_render = annotated_frame
 
     # Render results dynamically onto the client application workspace
-    st.image(final_render, caption="📊 Parallel Multimodal Analysis Analytics Projector Overlay", use_container_width=True)
+    st.image(final_render, caption="📊 Parallel Multimodal Analysis Analytics Projector Overlay", width='stretch')
     
     # ==========================================
     # CORE METRICS DISPLAY FOOTER PANELS
