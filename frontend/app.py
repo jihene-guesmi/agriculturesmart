@@ -20,7 +20,7 @@ st.set_page_config(
 # Custom Glassmorphic CSS Styling for a Premium Dashboard Look
 st.markdown("""
 <style>
-@import url('https://googleapis.com family=Inter:wght=300;400;500;700;900&display=swap');
+@import url('https://googleapis.com');
 
 .stApp {
     font-family: 'Inter', sans-serif;
@@ -113,7 +113,7 @@ with st.spinner("⏳ Warming up AI Quality Inspection System..."):
     surface_mapper_engine = load_surface_mapper()
 
 # ==========================================
-# SIDEBAR DASHBOARD CONTROL Parameter DECK
+# SIDEBAR DASHBOARD CONTROL PARAMETER DECK
 # ==========================================
 st.sidebar.markdown("### ⚙️ Inspection Settings")
 overlay_opacity = st.sidebar.slider("Anomaly Highlights Visibility", 0.0, 1.0, 0.40, step=0.05)
@@ -138,7 +138,7 @@ uploaded_file = st.file_uploader("📤 Upload Fruit Image for Quality Inspection
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
-# INSPECTION INFRASTRUCTURE INFRASTRUCTURE PIPELINE
+# INSPECTION INFRASTRUCTURE PIPELINE
 # ==========================================
 if uploaded_file is not None:
     # Read the incoming image arrays cleanly
@@ -152,7 +152,9 @@ if uploaded_file is not None:
     with st.spinner("🧠 Scanning fruit surface for anomalies and defects..."):
         # 1. Run Core Scanner A: Defect Spot Identification Box
         tracker_results = defect_tracker_engine(rgb_img, verbose=False)
-        annotated_frame = tracker_results.plot() 
+        
+        # FIX: Extract index 0 from the results list array to prevent the AttributeError on plot()
+        annotated_frame = tracker_results[0].plot() 
         annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB) 
         
         # 2. Run Core Scanner B: Dense Surface Color Mapping
