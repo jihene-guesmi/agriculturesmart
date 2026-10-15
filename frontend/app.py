@@ -253,8 +253,8 @@ if active_image_src is not None:
     
     with col_metric1:
     # ==================== DISPLAY DYNAMIC INSIGHT SCORE CARDS ====================
-    st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
-    col_metric1, col_metric2 = st.columns(2)
+     st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
+     col_metric1, col_metric2 = st.columns(2)
     
     with col_metric1:
         st.markdown(f"""
