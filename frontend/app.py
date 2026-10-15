@@ -101,13 +101,15 @@ def load_defect_tracker():
 def load_surface_mapper():
     model = segmentation.deeplabv3_resnet50(weights=segmentation.DeepLabV3_ResNet50_Weights.DEFAULT)
     model.eval()
-    if torch.cuda.is_available():
-        model = model.cuda()
-    return model
+    # Stable, high-reliability public image links representing distinct crop health states
+gallery_images = {
+    "Sample 1": {"url": "https://wikimedia.org", "desc": "🟢 Healthy Premium Leaf"},
+    "Sample 2": {"url": "https://wikimedia.org", "desc": "🟢 Healthy Growth Leaf"},
+    "Sample 3": {"url": "https://wikimedia.org", "desc": "🟢 Healthy Texture Surface"},
+    "Sample 4": {"url": "https://wikimedia.org", "desc": "🔴 Anomaly: Brown Leaf Spots"},
+    "Sample 5": {"url": "https://wikimedia.org", "desc": "🟡 Warning: Surface Discoloration"}
+}
 
-with st.spinner("⏳ Warming up AI Quality Inspection System..."):
-    defect_tracker_engine = load_defect_tracker()
-    surface_mapper_engine = load_surface_mapper()
 
 # ==========================================
 # SIDEBAR CONTROL PARAMETER DECK
