@@ -235,11 +235,13 @@ if active_image_src is not None:
 
     st.image(final_render, caption="📸 Quality Scanner Output | Boxes Highlight Spot Anchors, Orange Layer Maps Dense Rot Surface Area", width='stretch')
     
-    # ==================== SURFACE DENSITY ANALYSIS ====================
+        # ==================== SURFACE DENSITY ANALYSIS ====================
     healthy_plant_pixels = np.sum(surface_predictions == 15)
     total_pixels = surface_predictions.size
-    detected_boxes = len(tracker_results.boxes) if len(tracker_results) > 0 else 0
     
+    # FIX: Added the explicit index parameter to extract the first image results object before checking for boxes
+    detected_boxes = len(tracker_results[0].boxes) if len(tracker_results) > 0 else 0
+
     if detected_boxes > 0:
         damage_percentage = min(8.5 * detected_boxes, 98.45)
     else:
