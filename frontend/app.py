@@ -187,10 +187,12 @@ if active_image_src is not None:
     st.markdown("### 📊 Active Diagnostic Telemetry Matrix View")
     
     with st.spinner("🧠 Scanning sample layers for diagnostic anomalies..."):
-        # 1. Run Engine A: Object Detection (YOLO)
+       # 1. Run Engine A: Object Detection (YOLO)
         tracker_results = defect_tracker_engine(active_image_src, verbose=False)
-        annotated_frame = tracker_results.plot() 
-        annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB) 
+        
+        # FIX: Added the [0] bracket index to extract the active image object out of the tracking list wrapper
+        annotated_frame = tracker_results[0].plot() 
+        annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)  
         
         # 2. Run Engine B: Dense Surface Segmentation (DeepLabV3)
         input_image = Image.fromarray(active_image_src)
