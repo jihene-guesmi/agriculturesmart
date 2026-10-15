@@ -1,290 +1,196 @@
 import streamlit as st
-import requests
-import numpy as np
 import cv2
-from PIL import Image
-import io
+import numpy as np
+import torch
 import time
+from PIL import Image
+from ultralytics import YOLO
 
-# ---------------------------------
-# PAGE CONFIG
-# ---------------------------------
+# ==========================================
+# PAGE CONFIGURATION & THEME
+# ==========================================
 st.set_page_config(
-    page_title="Smart Agriculture AI",
+    page_title="Smart Agriculture AI Studio",
     page_icon="🌿",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="centered"
 )
 
-# ---------------------------------
-# CUSTOM CSS
-# ---------------------------------
-st.markdown(
-    """
-    <style>
+# Custom Glassmorphic CSS Styling Layouts
+st.markdown("""
+<style>
+@import url('https://googleapis.com');
 
-    .stApp {
-        background: linear-gradient(to right, #f4f7f9, #eef2f3);
-    }
+.stApp {
+    font-family: 'Inter', sans-serif;
+    background-color: #06090e;
+}
 
-    .main-title {
-        font-size: 48px;
-        font-weight: 800;
-        color: #1B5E20;
-        text-align: center;
-        margin-bottom: 5px;
-    }
+.title {
+    text-align: center;
+    font-size: 46px;
+    font-weight: 900;
+    background: linear-gradient(45deg, #10b981, #059669);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 5px;
+}
 
-    .subtitle {
-        text-align: center;
-        font-size: 18px;
-        color: #555;
-        margin-bottom: 30px;
-    }
+.subtitle {
+    text-align: center;
+    color: #8e8e93;
+    font-size: 15px;
+    margin-bottom: 30px;
+}
 
-    .card {
-        background: white;
-        padding: 20px;
-        border-radius: 18px;
-        box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
-        text-align: center;
-    }
+.glass-card {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 22px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0px 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+</style>
+""", unsafe_allow_html=True)
 
-    .metric-title {
-        font-size: 16px;
-        color: black;
-    }
+# ==========================================
+# 🌿 CACHED MODEL INITIALIZATION (DIRECT ENGINE LOAD)
+# ==========================================
+@st.cache_resource
+def load_yolo_model():
+    # Locates your committed custom weights pathway folder parameters
+    return YOLO("detection/best.pt")
 
-    .metric-value {
-        font-size: 28px;
-        font-weight: bold;
-        color: #1B5E20;
-    }
+@st.cache_resource
+def load_segmentation_model():
+    # Instantiates the underlying DeepLabV3/ResNet-50 network securely
+    model = torch.hub.load('pytorch/vision:v0.10.0', 'deeplabv3_resnet50', pretrained=True)
+    model.eval()
+    if torch.cuda.is_available():
+        model = model.cuda()
+    return model
 
-    .footer {
-        text-align: center;
-        color: #777;
-        margin-top: 40px;
-        font-size: 14px;
-    }
+# Warm up neural architectures directly into global server memory spaces
+with st.spinner("⏳ Loading Concurrent Neural Acceleration Engines..."):
+    yolo_engine = load_yolo_model()
+    deeplab_engine = load_segmentation_model()
 
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# ==========================================
+# SIDEBAR RADAR PARAMETERS
+# ==========================================
+st.sidebar.markdown("### ⚙️ System Configuration")
+overlay_opacity = st.sidebar.slider("Overlay Opacity Coefficient", 0.0, 1.0, 0.40, step=0.05)
+enable_overlay = st.sidebar.checkbox("Enable Hybrid Processing Layer", value=True)
 
-# ---------------------------------
-# HEADER
-# ---------------------------------
-st.markdown(
-    '<div class="main-title">🌿 Smart Agriculture AI</div>',
-    unsafe_allow_html=True
-)
+st.sidebar.markdown("---")
+st.sidebar.markdown("""
+📊 **Engine Telemetry Information:**
+- Core Network A: **YOLO Backbone**
+- Core Network B: **DeepLabV3/ResNet-50**
+- Execution Device: **Cloud CPU Instance**
+""")
 
-st.markdown(
-    '<div class="subtitle">Real-Time Deep Learning Segmentation System using FastAPI + Streamlit</div>',
-    unsafe_allow_html=True
-)
+# ==========================================
+# APPLICATION BODY INTERFACE
+# ==========================================
+st.markdown("<div class='title'>🌿 Smart Agriculture AI Studio</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Real-Time Multimodal Deep Learning Parsing and Semantic Scene Segmentation</div>", unsafe_allow_html=True)
 
-# ---------------------------------
-# SIDEBAR
-# ---------------------------------
-st.sidebar.title("⚙️ Configuration")
+st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+uploaded_file = st.file_uploader("📤 Upload Agronomic Spatial Crop Image:", type=["jpg", "jpeg", "png"])
+st.markdown("</div>", unsafe_allow_html=True)
 
-opacity = st.sidebar.slider(
-    "Overlay Opacity",
-    min_value=0.1,
-    max_value=1.0,
-    value=0.4,
-    step=0.1
-)
-
-show_overlay = st.sidebar.checkbox(
-    "Enable Overlay",
-    value=True
-)
-
-# ---------------------------------
-# FILE UPLOAD TITLE IN BLACK
-# ---------------------------------
-st.markdown(
-    "<h4 style='color:black;'>📤 Upload Agricultural Image</h4>",
-    unsafe_allow_html=True
-)
-
-uploaded_file = st.file_uploader(
-    "",
-    type=["jpg", "jpeg", "png"]
-)
-
-# ---------------------------------
-# MAIN LOGIC
-# ---------------------------------
+# ==========================================
+# CORE LOCAL EVALUATION PIPELINE INTERACTION
+# ==========================================
 if uploaded_file is not None:
-
-    # -----------------------------
-    # READ IMAGE
-    # -----------------------------
-    file_bytes = uploaded_file.getvalue()
-
-    image = cv2.imdecode(
-        np.frombuffer(file_bytes, np.uint8),
-        cv2.IMREAD_COLOR
-    )
-
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    image = cv2.resize(image, (256, 256))
-
-    # -----------------------------
-    # SEND TO API
-    # -----------------------------
-    files = {
-        "file": file_bytes
-    }
-
-    with st.spinner("🧠 AI model is processing the image..."):
-
+    # Read uploaded asset array maps
+    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+    opencv_img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    h_orig, w_orig, _ = opencv_img.shape
+    rgb_img = cv2.cvtColor(opencv_img, cv2.COLOR_BGR2RGB)
+    
+    st.markdown("### 📊 Live Analytics Matrix View")
+    
+    with st.spinner("🧠 Computing Concurrent Dual-Engine Visual Inference Protocols..."):
         start_time = time.time()
+        
+        # --- Engine A Execution: Object Detection (YOLO) ---
+        yolo_results = yolo_engine(rgb_img, verbose=False)
+        annotated_frame = yolo_results[0].plot() # Automatically plots bounding boxes onto input tensor map
+        annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB) # Keep mapping aligned
+        
+        # --- Engine B Execution: Dense Semantic Pixel Classification (DeepLabV3) ---
+        input_image = Image.fromarray(rgb_img)
+        preprocess = torch.hub.load('pytorch/vision:v0.10.0', 'transforms').Compose([
+            torch.hub.load('pytorch/vision:v0.10.0', 'transforms').Resize(520),
+            torch.hub.load('pytorch/vision:v0.10.0', 'transforms').ToTensor(),
+            torch.hub.load('pytorch/vision:v0.10.0', 'transforms').Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            ),
+        ])
+        input_tensor = preprocess(input_image).unsqueeze(0)
+        
+        if torch.cuda.is_available():
+            input_tensor = input_tensor.to('cuda')
+            
+        with torch.no_grad():
+            output = deeplab_engine(input_tensor)['out'][0]
+        seg_predictions = output.argmax(0).byte().cpu().numpy()
+        
+        latency_bench = (time.time() - start_time) * 1000
 
-        response = requests.post(
-            "http://127.0.0.1:8000/predict",
-            files=files
-        )
+    # Create distinct vegetative canvas mask channels
+    r = np.zeros_like(seg_predictions).astype(np.uint8)
+    g = np.zeros_like(seg_predictions).astype(np.uint8)
+    b = np.zeros_like(seg_predictions).astype(np.uint8)
+    
+    # Isolate Pascal VOC class mapping 15 (Potted Plants/General Vegetation) 
+    # to render an explicit green matrix layer
+    plant_class_idx = (seg_predictions == 15)
+    g[plant_class_idx] = 255 
+    
+    # Map residual secondary tracking layers to abstract pixels
+    non_plant_idx = (seg_predictions != 15) & (seg_predictions != 0)
+    r[non_plant_idx] = seg_predictions[non_plant_idx] * 12
+    b[non_plant_idx] = 200 - (seg_predictions[non_plant_idx] * 8)
+    
+    rgb_mask = cv2.merge([r, g, b])
+    # Resize spatial boundaries back onto original grid dimensions cleanly
+    resized_mask = cv2.resize(rgb_mask, (w_orig, h_orig), interpolation=cv2.INTER_NEAREST)
 
-        end_time = time.time()
+    # Compile the alpha blended multi-layer projector overlays
+    if enable_overlay:
+        final_render = cv2.addWeighted(annotated_frame, 1.0 - overlay_opacity, resized_mask, overlay_opacity, 0)
+    else:
+        final_render = annotated_frame
 
-    # -----------------------------
-    # GET MASK
-    # -----------------------------
-    mask = np.array(response.json()["mask"])
-
-    # FIXED VISUALIZATION
-    binary_mask = (mask * 255).astype(np.uint8)
-
-    # -----------------------------
-    # OVERLAY CREATION
-    # -----------------------------
-    overlay = image.copy()
-
-    overlay[binary_mask > 127] = [255, 0, 0]
-
-    blended = cv2.addWeighted(
-        image,
-        1 - opacity,
-        overlay,
-        opacity,
-        0
-    )
-
-    # -----------------------------
-    # DASHBOARD CARDS
-    # -----------------------------
-    c1, c2, c3, c4 = st.columns(4)
-
-    with c1:
-        st.markdown(
-            f'''
-            <div class="card">
-                <div class="metric-title">Image Width</div>
-                <div class="metric-value">{image.shape[1]}</div>
-            </div>
-            ''',
-            unsafe_allow_html=True
-        )
-
-    with c2:
-        st.markdown(
-            f'''
-            <div class="card">
-                <div class="metric-title">Image Height</div>
-                <div class="metric-value">{image.shape[0]}</div>
-            </div>
-            ''',
-            unsafe_allow_html=True
-        )
-
-    with c3:
-        segmented_pixels = int((binary_mask > 127).sum())
-
-        st.markdown(
-            f'''
-            <div class="card">
-                <div class="metric-title">Segmented Pixels</div>
-                <div class="metric-value">{segmented_pixels}</div>
-            </div>
-            ''',
-            unsafe_allow_html=True
-        )
-
-    with c4:
-        inference_time = round(end_time - start_time, 3)
-
-        st.markdown(
-            f'''
-            <div class="card">
-                <div class="metric-title">Inference Time</div>
-                <div class="metric-value">{inference_time}s</div>
-            </div>
-            ''',
-            unsafe_allow_html=True
-        )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # -----------------------------
-    # IMAGE DISPLAY
-    # -----------------------------
-    col1, col2, col3 = st.columns(3)
-
+    # Render results dynamically onto the client application workspace
+    st.image(final_render, caption="📊 Parallel Multimodal Analysis Analytics Projector Overlay", use_container_width=True)
+    
+    # ==========================================
+    # CORE METRICS DISPLAY FOOTER PANELS
+    # ==========================================
+    col1, col2 = st.columns(2)
     with col1:
-        st.markdown(
-            "<h3 style='color:black;'>Original Image</h3>",
-            unsafe_allow_html=True
-        )
-        st.image(image, use_container_width=True)
-
+        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+        # Compute agronomic crop canopy distribution area index ratio metrics
+        canopy_density = (np.sum(plant_class_idx) / seg_predictions.size) * 100
+        st.metric(label="🌿 Calculated Canopy Spatial Distribution", value=f"{canopy_density:.2f}%")
+        st.markdown("</div>", unsafe_allow_html=True)
+        
     with col2:
-        st.markdown(
-            "<h3 style='color:black;'>Predicted Mask</h3>",
-            unsafe_allow_html=True
-        )
-        st.image(binary_mask, use_container_width=True)
+        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+        st.metric(label="⚡ Execution Deterministic Benchmarking", value=f"{latency_bench:.1f} ms")
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+else:
+    st.info("Upload an agricultural terrain tensor frame above to compute advanced spatial object detection overlays and pixel segmentation charts 🌾")
 
-    with col3:
-        st.markdown(
-            "<h3 style='color:black;'>Overlay Result</h3>",
-            unsafe_allow_html=True
-        )
-
-        if show_overlay:
-            st.image(blended, use_container_width=True)
-        else:
-            st.image(image, use_container_width=True)
-
-    # -----------------------------
-    # DOWNLOAD BUTTON
-    # -----------------------------
-    result_image = Image.fromarray(blended)
-
-    buffer = io.BytesIO()
-    result_image.save(buffer, format="PNG")
-
-    st.download_button(
-        label="⬇️ Download Result",
-        data=buffer.getvalue(),
-        file_name="segmentation_result.png",
-        mime="image/png"
-    )
-
-# ---------------------------------
-# FOOTER
-# ---------------------------------
-st.markdown(
-    """
-    <div class="footer">
-        🌱 Smart Agriculture AI Dashboard | Deep Learning Segmentation System
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# ==========================================
+# STUDIO RECONCILIATION FOOTER
+# ==========================================
+st.markdown("---")
+st.markdown("<div style='text-align: center; color: #555; font-size: 11px;'>🍿 Architecture Engine Ecosystem Deployed via Streamlit Multi-Layer Vector Cloud Modules</div>", unsafe_allow_html=True)
