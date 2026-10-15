@@ -6,6 +6,7 @@ import time
 import os
 from PIL import Image
 from ultralytics import YOLO
+import torchvision.models.segmentation as segmentation  # Native import for stability
 
 # ==========================================
 # PAGE CONFIGURATION & THEME
@@ -72,14 +73,14 @@ def load_yolo_model():
     elif os.path.exists(frontend_weights_path):
         return YOLO(frontend_weights_path)
     else:
-        # 🚀 CLOUD NETWORK FALLBACK: If best.pt was skipped by GitHub because of its size,
+        # CLOUD NETWORK FALLBACK: If best.pt was skipped by GitHub because of its size,
         # pull a public pre-trained YOLOv8 weights matrix to prevent a total application crash.
         return YOLO("https://github.com")
 
 @st.cache_resource
 def load_segmentation_model():
-    # Instantiates the underlying DeepLabV3/ResNet-50 network securely
-    model = torch.hub.load('pytorch/vision:v0.10.0', 'deeplabv3_resnet50', pretrained=True)
+    # FIX: Native weights loading handles Python 3.14 layers without torch.hub crashes
+    model = segmentation.deeplabv3_resnet50(weights=segmentation.DeepLabV3_ResNet50_Weights.DEFAULT)
     model.eval()
     if torch.cuda.is_available():
         model = model.cuda()
@@ -137,12 +138,13 @@ if uploaded_file is not None:
         
         # --- Engine B Execution: Dense Semantic Pixel Classification (DeepLabV3) ---
         input_image = Image.fromarray(rgb_img)
-        preprocess = torch.hub.load('pytorch/vision:v0.10.0', 'transforms').Compose([
-            torch.hub.load('pytorch/vision:v0.10.0', 'transforms').Resize(520),
-            torch.hub.load('pytorch/vision:v0.10.0', 'transforms').ToTensor(),
-            torch.hub.load('pytorch/vision:v0.10.0', 'transforms').Normalize(
-                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-            ),
+        
+        # Fixed transforms sequence matching native torchvision components
+        from torchvision import transforms
+        preprocess = transforms.Compose([
+            transforms.Resize(520),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
         input_tensor = preprocess(input_image).unsqueeze(0)
         
@@ -160,8 +162,7 @@ if uploaded_file is not None:
     g = np.zeros_like(seg_predictions).astype(np.uint8)
     b = np.zeros_like(seg_predictions).astype(np.uint8)
     
-    # Isolate Pascal VOC class mapping 15 (Potted Plants/General Vegetation) 
-    # to render an explicit green matrix layer
+    # Isolate Pascal VOC class mapping 15 (Potted Plants/General Vegetation)
     plant_class_idx = (seg_predictions == 15)
     g[plant_class_idx] = 255 
     
