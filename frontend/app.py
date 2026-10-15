@@ -94,7 +94,7 @@ def load_defect_tracker():
     deeplab_engine = load_surface_mapper()  
 
     return YOLO(frontend_weights)
-    else:
+else:
     return YOLO("yolov8n.pt")
 
 @st.cache_resource
